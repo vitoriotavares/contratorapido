@@ -1,0 +1,294 @@
+# ContratoRápido - Local Development Docker Compose
+# For testing MongoDB, Redis, n8n queue mode and Gotenberg
+
+services:
+  # n8n Workflow Engine with Queue Mode
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    ports:
+      - "5678:5678"  # n8n UI
+    environment:
+      # Database
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_HOST=postgresql
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=postgres123
+      - DB_POSTGRESDB_SCHEMA=public
+      
+      # Queue Mode Configuration
+      - N8N_EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=0
+      - QUEUE_BULL_REDIS_PASSWORD=redis123
+      
+      # URLs
+      - WEBHOOK_URL=http://localhost:5678
+      - N8N_EDITOR_BASE_URL=http://localhost:5678
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      
+      # Settings
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+      - N8N_METRICS=true
+      - N8N_LOG_LEVEL=info
+      
+      # Executions
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+      
+    volumes:
+      - n8n-data:/home/node/.n8n
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - contratorapido
+
+  # n8n Worker Process
+  n8n-worker:
+    image: docker.n8n.io/n8nio/n8n
+    command: n8n worker
+    environment:
+      # Database (same as main n8n)
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_HOST=postgresql
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=postgres123
+      - DB_POSTGRESDB_SCHEMA=public
+      
+      # Queue configuration
+      - N8N_EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=0
+      - QUEUE_BULL_REDIS_PASSWORD=redis123
+      
+      # Worker settings
+      - N8N_WORKERS_CONCURRENCY=2
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      
+      # Timezone
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+      
+    volumes:
+      - n8n-data:/home/node/.n8n
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - contratorapido
+    deploy:
+      replicas: 1  # Start with 1 worker for local testing
+
+  # PostgreSQL Database (n8n internal data)
+  postgresql:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"  # Expose for debugging
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_DB=n8n
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'pg_isready -U postgres -d n8n'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - contratorapido
+
+  # MongoDB Database (conversation data)
+  mongodb:
+    image: mongo:7.0-jammy
+    ports:
+      - "27017:27017"  # Expose for debugging
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=contratorapido
+      - MONGO_INITDB_ROOT_PASSWORD=mongo123
+      - MONGO_INITDB_DATABASE=contratorapido
+    command: 
+      - --auth
+      - --journal
+      - --replSet=rs0
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'mongosh --eval "db.adminCommand(\"ping\")" --quiet'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - contratorapido
+
+  # MongoDB Replica Set Initialization
+  mongo-setup:
+    image: mongo:7.0-jammy
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=contratorapido
+      - MONGO_INITDB_ROOT_PASSWORD=mongo123
+    command: >
+      mongosh --host mongodb:27017 --authenticationDatabase admin 
+      -u contratorapido -p mongo123
+      --eval "
+      try {
+        rs.status();
+        print('Replica set already initialized');
+      } catch(e) {
+        print('Initializing replica set...');
+        rs.initiate({
+          _id: 'rs0',
+          members: [{ _id: 0, host: 'mongodb:27017' }]
+        });
+        print('Replica set initialized');
+      }
+      use contratorapido;
+      db.createCollection('conversations');
+      db.createCollection('rate_limits');  
+      db.createCollection('message_log');
+      db.createCollection('templates');
+      print('Collections created');
+      "
+    restart: "no"
+    networks:
+      - contratorapido
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"  # Expose for debugging
+    command: 
+      - redis-server
+      - --requirepass redis123
+      - --appendonly yes
+      - --appendfsync everysec
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'redis-cli --no-auth-warning -a redis123 ping || exit 1'
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - contratorapido
+
+  # Gotenberg PDF Generation Service
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    ports:
+      - "3000:3000"  # Expose for testing
+    command:
+      - gotenberg
+      - --chromium-disable-web-security
+      - --chromium-allow-list=file:///*
+      - --chromium-deny-list=^file:///[^tmp].*
+      - --chromium-disable-javascript=false
+      - --chromium-allow-file-access-from-files
+      - --chromium-allow-insecure-localhost
+      - --api-timeout=30s
+      - --api-root-path=/
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'curl -f http://localhost:3000/health || exit 1'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - contratorapido
+    tmpfs:
+      - /tmp
+
+  # MongoDB Express (Web UI for MongoDB debugging)
+  mongo-express:
+    image: mongo-express:1.0.2-20
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=contratorapido
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=mongo123
+      - ME_CONFIG_MONGODB_URL=mongodb://contratorapido:mongo123@mongodb:27017/contratorapido?authSource=admin
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+      - ME_CONFIG_SITE_BASEURL=/mongo/
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - contratorapido
+
+  # Redis Commander (Web UI for Redis debugging)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:redis123
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=admin123
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - contratorapido
+
+# Named Volumes
+volumes:
+  n8n-data:
+    driver: local
+  postgresql-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+  redis-data:
+    driver: local
+
+# Network
+networks:
+  contratorapido:
+    driver: bridge

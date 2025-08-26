@@ -1,0 +1,249 @@
+# ContratoRápido - Production Docker Compose for Coolify
+# Includes: n8n + PostgreSQL + MongoDB + Redis + Gotenberg
+
+services:
+  # n8n Workflow Engine with Queue Mode
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    environment:
+      # Coolify Service URLs
+      - SERVICE_FQDN_N8N_5678
+      - 'N8N_EDITOR_BASE_URL=${SERVICE_FQDN_N8N}'
+      - 'WEBHOOK_URL=${SERVICE_FQDN_N8N}'
+      - 'N8N_HOST=${SERVICE_URL_N8N}'
+      
+      # Timezone
+      - 'GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/Sao_Paulo}'
+      - 'TZ=${TZ:-America/Sao_Paulo}'
+      
+      # PostgreSQL Database (n8n metadata)
+      - DB_TYPE=postgresdb
+      - 'DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-n8n}'
+      - DB_POSTGRESDB_HOST=postgresql
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=$SERVICE_USER_POSTGRES
+      - DB_POSTGRESDB_SCHEMA=public
+      - DB_POSTGRESDB_PASSWORD=$SERVICE_PASSWORD_POSTGRES
+      
+      # Queue Mode Configuration (CR-001)
+      - N8N_EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=0
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      
+      # Queue Settings
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168 # 7 days
+      
+      # Performance Settings
+      - N8N_PAYLOAD_DEFAULT_MAX_SIZE=16
+      - N8N_METRICS=true
+      
+      # Security
+      - N8N_SECURE_COOKIE=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      
+    volumes:
+      - 'n8n-data:/home/node/.n8n'
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'wget -qO- http://127.0.0.1:5678/healthz || exit 1'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - contratorapido
+    restart: unless-stopped
+
+  # PostgreSQL Database (n8n internal data)
+  postgresql:
+    image: 'postgres:16-alpine'
+    volumes:
+      - 'postgresql-data:/var/lib/postgresql/data'
+    environment:
+      - POSTGRES_USER=$SERVICE_USER_POSTGRES
+      - POSTGRES_PASSWORD=$SERVICE_PASSWORD_POSTGRES
+      - 'POSTGRES_DB=${POSTGRES_DB:-n8n}'
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-n8n}'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - contratorapido
+    restart: unless-stopped
+
+  # MongoDB Database (conversation data, contracts, templates) - Simplified for production
+  mongodb:
+    image: 'mongo:7.0-jammy'
+    volumes:
+      - 'mongodb-data:/data/db'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-contratorapido}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=contratorapido
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'mongosh --host localhost --authenticationDatabase admin -u ${MONGO_ROOT_USER:-contratorapido} -p ${MONGO_ROOT_PASSWORD} --eval "db.adminCommand(\"ping\")" --quiet'
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 40s
+    networks:
+      - contratorapido
+    restart: unless-stopped
+
+  # MongoDB Database Setup (create collections)
+  mongo-setup:
+    image: 'mongo:7.0-jammy'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-contratorapido}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    command: >
+      mongosh --host mongodb:27017 --authenticationDatabase admin 
+      -u $${MONGO_ROOT_USER:-contratorapido} -p $${MONGO_ROOT_PASSWORD}
+      --eval "
+      use contratorapido;
+      db.createCollection('conversations');
+      db.createCollection('rate_limits');  
+      db.createCollection('message_log');
+      db.createCollection('templates');
+      print('MongoDB collections created successfully');
+      "
+    networks:
+      - contratorapido
+    restart: "no"
+
+  # Redis Cache & Queue (n8n queue mode + caching)
+  redis:
+    image: 'redis:7.2-alpine'
+    command: 
+      - redis-server
+      - --appendonly yes
+      - --appendfsync everysec
+      - --auto-aof-rewrite-percentage 100
+      - --auto-aof-rewrite-min-size 64mb
+      - --maxmemory 512mb
+      - --maxmemory-policy allkeys-lru
+      - --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - 'redis-data:/data'
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'redis-cli --no-auth-warning -a ${REDIS_PASSWORD:-} ping || exit 1'
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - contratorapido
+    restart: unless-stopped
+
+  # Gotenberg PDF Generation Service (CR-003)
+  gotenberg:
+    image: 'gotenberg/gotenberg:8'
+    command:
+      - gotenberg
+      - --chromium-disable-web-security
+      - --chromium-allow-list=file:///*
+      - --chromium-deny-list=^file:///[^tmp].*
+      - --chromium-disable-javascript=false
+      - --chromium-allow-file-access-from-files
+      - --chromium-allow-insecure-localhost
+      - --api-timeout=30s
+      - --api-root-path=/
+    environment:
+      - GOTENBERG_CHROMIUM_DISABLE_WEB_SECURITY=true
+      - GOTENBERG_CHROMIUM_ALLOW_LIST=file:///*
+      - GOTENBERG_API_TIMEOUT=30s
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'curl -f http://localhost:3000/health || exit 1'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - contratorapido
+    restart: unless-stopped
+    tmpfs:
+      - /tmp
+
+  # n8n Worker Process (for queue mode scaling)
+  n8n-worker:
+    image: docker.n8n.io/n8nio/n8n
+    command: n8n worker
+    environment:
+      # Database connection (same as main n8n)
+      - DB_TYPE=postgresdb
+      - 'DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-n8n}'
+      - DB_POSTGRESDB_HOST=postgresql
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=$SERVICE_USER_POSTGRES
+      - DB_POSTGRESDB_SCHEMA=public
+      - DB_POSTGRESDB_PASSWORD=$SERVICE_PASSWORD_POSTGRES
+      
+      # Queue configuration
+      - N8N_EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=0
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      
+      # Worker settings
+      - N8N_WORKERS_CONCURRENCY=2
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      
+      # Timezone
+      - 'GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/Sao_Paulo}'
+      - 'TZ=${TZ:-America/Sao_Paulo}'
+      
+    volumes:
+      - 'n8n-data:/home/node/.n8n'
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    networks:
+      - contratorapido
+    restart: unless-stopped
+
+# Named Volumes
+volumes:
+  n8n-data:
+    driver: local
+  postgresql-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# Network
+networks:
+  contratorapido:
+    driver: bridge

@@ -1,0 +1,442 @@
+version: '3.8'
+
+# Production Docker Compose for ContratoRápido
+# Includes Nginx, SSL termination, and production-ready configurations
+
+services:
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: criador_contrato_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy_params:/etc/nginx/proxy_params:ro
+      - ./website:/var/www/contratorapido:ro
+      - ./ssl/certs:/etc/ssl/certs:ro
+      - ./ssl/private:/etc/ssl/private:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - n8n
+    networks:
+      - criador_contrato_network
+    environment:
+      - TZ=America/Sao_Paulo
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Redis - Production Configuration
+  redis:
+    image: redis:7-alpine
+    container_name: criador_contrato_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"  # Only bind to localhost
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - TZ=America/Sao_Paulo
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # MongoDB - Production Replica Set
+  mongodb:
+    image: mongo:7
+    container_name: criador_contrato_mongodb
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"  # Only bind to localhost
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./mongodb/mongod.conf:/etc/mongod.conf:ro
+      - ./backups/mongodb:/backups
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=criador_contrato
+      - TZ=America/Sao_Paulo
+    command: mongod --config /etc/mongod.conf --replSet rs0 --bind_ip_all
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # MongoDB Replica Set Initializer
+  mongodb-init:
+    image: mongo:7
+    container_name: criador_contrato_mongodb_init
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - MONGO_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - TZ=America/Sao_Paulo
+    command: >
+      bash -c "
+        mongosh --host mongodb:27017 --username ${MONGO_ROOT_USERNAME} --password ${MONGO_ROOT_PASSWORD} --eval \"
+        try {
+          rs.status();
+          print('Replica set already initialized');
+        } catch (e) {
+          print('Initializing replica set...');
+          rs.initiate({
+            _id: 'rs0',
+            members: [{ _id: 0, host: 'mongodb:27017' }]
+          });
+          print('Replica set initialized');
+        }
+        \" && exit 0
+      "
+    networks:
+      - criador_contrato_network
+
+  # n8n Main Process - Production
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: criador_contrato_n8n
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows:ro
+      - ./backups/n8n:/backups
+    environment:
+      # Queue Mode Configuration
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - QUEUE_BULL_REDIS_DB=0
+      
+      # Database Configuration
+      - DB_TYPE=mongodb
+      - DB_MONGODB_CONNECTION_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/criador_contrato?replicaSet=rs0&authSource=admin
+      
+      # Authentication
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      
+      # Production Settings
+      - N8N_HOST=admin.contratorapido.app.br
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_EDITOR_BASE_URL=https://admin.contratorapido.app.br/
+      
+      # Webhook Configuration
+      - WEBHOOK_URL=https://contratorapido.app.br
+      - N8N_PAYLOAD_SIZE_MAX=32
+      
+      # Security
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_SECURE_COOKIE=true
+      
+      # Performance
+      - QUEUE_RECOVERY_INTERVAL=30
+      - N8N_LOG_LEVEL=warn
+      - N8N_METRICS=true
+      
+      # Timezone
+      - TZ=America/Sao_Paulo
+      
+      # External Service URLs
+      - GOTENBERG_URL=http://gotenberg:3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - criador_contrato_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  # n8n Workers - Production Scaling
+  n8n-worker-1:
+    image: n8nio/n8n:latest
+    container_name: criador_contrato_n8n_worker_1
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n:ro
+    environment:
+      # Queue Mode Configuration
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - QUEUE_BULL_REDIS_DB=0
+      
+      # Database Configuration
+      - DB_TYPE=mongodb
+      - DB_MONGODB_CONNECTION_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/criador_contrato?replicaSet=rs0&authSource=admin
+      
+      # Worker Configuration
+      - N8N_WORKERS_MODE=execute
+      - N8N_LOG_LEVEL=warn
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      
+      # External Services
+      - GOTENBERG_URL=http://gotenberg:3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Timezone
+      - TZ=America/Sao_Paulo
+    command: n8n worker
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  n8n-worker-2:
+    image: n8nio/n8n:latest
+    container_name: criador_contrato_n8n_worker_2
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n:ro
+    environment:
+      # Same as worker-1
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - QUEUE_BULL_REDIS_DB=0
+      - DB_TYPE=mongodb
+      - DB_MONGODB_CONNECTION_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/criador_contrato?replicaSet=rs0&authSource=admin
+      - N8N_WORKERS_MODE=execute
+      - N8N_LOG_LEVEL=warn
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - GOTENBERG_URL=http://gotenberg:3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TZ=America/Sao_Paulo
+    command: n8n worker
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  n8n-worker-3:
+    image: n8nio/n8n:latest
+    container_name: criador_contrato_n8n_worker_3
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n:ro
+    environment:
+      # Same as other workers
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - QUEUE_BULL_REDIS_DB=0
+      - DB_TYPE=mongodb
+      - DB_MONGODB_CONNECTION_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/criador_contrato?replicaSet=rs0&authSource=admin
+      - N8N_WORKERS_MODE=execute
+      - N8N_LOG_LEVEL=warn
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - GOTENBERG_URL=http://gotenberg:3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TZ=America/Sao_Paulo
+    command: n8n worker
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Gotenberg - PDF Generation Service
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: criador_contrato_gotenberg
+    restart: unless-stopped
+    volumes:
+      - gotenberg_tmp:/tmp
+      - ./pdf-templates:/app/templates:ro
+    environment:
+      - GOTENBERG_API_PORT=3000
+      - GOTENBERG_LOG_LEVEL=WARN
+      - GOTENBERG_LOG_FORMAT=json
+      - GOTENBERG_CHROMIUM_TIMEOUT=30s
+      - GOTENBERG_CHROMIUM_MAX_QUEUE_SIZE=200
+      - TZ=America/Sao_Paulo
+    command: >
+      gotenberg
+      --chromium-auto-start
+      --chromium-max-queue-size=200
+      --api-timeout=60s
+      --log-level=WARN
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Log Aggregation with Fluent Bit
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    container_name: criador_contrato_logs
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - nginx_logs:/var/log/nginx:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=America/Sao_Paulo
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # Monitoring with Node Exporter
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: criador_contrato_monitoring
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9100:9100"
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - '/:/host:ro,rslave'
+    environment:
+      - TZ=America/Sao_Paulo
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # Backup Service (Cron-based)
+  backup:
+    image: alpine:latest
+    container_name: criador_contrato_backup
+    restart: unless-stopped
+    volumes:
+      - ./scripts/backup-cron.sh:/usr/local/bin/backup-cron.sh:ro
+      - ./backups:/backups
+      - mongodb_data:/data/mongodb:ro
+      - n8n_data:/data/n8n:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=America/Sao_Paulo
+      - BACKUP_RETENTION_DAYS=30
+    command: >
+      sh -c "
+        apk add --no-cache docker-cli dcron &&
+        echo '0 2 * * * /usr/local/bin/backup-cron.sh' | crontab - &&
+        crond -f -l 2
+      "
+    networks:
+      - criador_contrato_network
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.05'
+
+volumes:
+  redis_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+  n8n_data:
+    driver: local
+  gotenberg_tmp:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  criador_contrato_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

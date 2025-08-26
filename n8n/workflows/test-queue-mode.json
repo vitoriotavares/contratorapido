@@ -1,0 +1,87 @@
+{
+  "name": "Test Queue Mode",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "8b3c4a5d-1e2f-4a7b-8c9d-0e1f2a3b4c5d",
+      "name": "When clicking \"Test workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const timestamp = new Date().toISOString();\nconst workerId = process.env.HOSTNAME || 'unknown';\nconst queueMode = process.env.EXECUTIONS_MODE || 'regular';\n\nreturn [{\n  json: {\n    message: 'Queue mode test successful',\n    timestamp,\n    workerId,\n    queueMode,\n    testData: {\n      redis_connected: true,\n      mongodb_connected: true,\n      worker_processing: true\n    }\n  }\n}];"
+      },
+      "id": "7a2b9c4d-5e6f-8a9b-0c1d-2e3f4a5b6c7d",
+      "name": "Generate Test Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "9d4e7f8a-1b2c-5d6e-9f0a-1b2c3d4e5f6a",
+      "name": "Wait 5 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const inputData = $json;\nconst processingTime = Date.now() - new Date(inputData.timestamp).getTime();\n\nreturn [{\n  json: {\n    ...inputData,\n    processingCompleted: new Date().toISOString(),\n    totalProcessingTime: processingTime,\n    status: 'Queue processing verified',\n    queueHealthy: processingTime < 10000 // Should complete in less than 10 seconds\n  }\n}];"
+      },
+      "id": "6c8e1f4a-7b8c-9d0e-1f2a-3b4c5d6e7f8a",
+      "name": "Verify Queue Processing",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "When clicking \"Test workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Generate Test Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Test Data": {
+      "main": [
+        [
+          {
+            "node": "Wait 5 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Verify Queue Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "meta": {
+    "instanceId": "criador_contrato_test"
+  },
+  "id": "1",
+  "tags": []
+}

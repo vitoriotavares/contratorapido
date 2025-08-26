@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato de Locação Residencial</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 14pt;
+            font-weight: normal;
+        }
+        
+        .parties {
+            margin: 30px 0;
+        }
+        
+        .party {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-left: 4px solid #333;
+            background-color: #f9f9f9;
+        }
+        
+        .party-title {
+            font-weight: bold;
+            font-size: 13pt;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .party-details {
+            margin-left: 20px;
+        }
+        
+        .property-details {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #333;
+            background-color: #fafafa;
+        }
+        
+        .property-title {
+            font-weight: bold;
+            font-size: 14pt;
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        
+        .clauses {
+            margin: 30px 0;
+        }
+        
+        .clause {
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        
+        .clause-number {
+            font-weight: bold;
+            display: inline;
+        }
+        
+        .clause-content {
+            display: inline;
+            margin-left: 5px;
+        }
+        
+        .value {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        
+        .signature-section {
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-block {
+            margin: 40px 0;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 2px solid #000;
+            width: 300px;
+            margin: 30px auto 10px;
+        }
+        
+        .date-location {
+            margin: 30px 0;
+            text-align: center;
+            font-style: italic;
+        }
+        
+        @media print {
+            body {
+                padding: 20px;
+            }
+            
+            .header {
+                margin-bottom: 20px;
+            }
+            
+            .signature-section {
+                page-break-inside: avoid;
+            }
+        }
+        
+        .legal-notice {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            font-size: 10pt;
+            text-align: justify;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .table th, .table td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Contrato de Locação Residencial</h1>
+        <div class="subtitle">Instrumento Particular de Locação de Imóvel Residencial</div>
+    </div>
+
+    <div class="parties">
+        <div class="party">
+            <div class="party-title">Locador(a)</div>
+            <div class="party-details">
+                <p><strong>Nome:</strong> {{locador_nome}}</p>
+                <p><strong>CPF/CNPJ:</strong> {{locador_documento}}</p>
+                <p><strong>Endereço:</strong> {{locador_endereco}}</p>
+                <p><strong>Cidade:</strong> {{locador_cidade}} - {{locador_estado}}</p>
+                <p><strong>CEP:</strong> {{locador_cep}}</p>
+            </div>
+        </div>
+
+        <div class="party">
+            <div class="party-title">Locatário(a)</div>
+            <div class="party-details">
+                <p><strong>Nome:</strong> {{locatario_nome}}</p>
+                <p><strong>CPF:</strong> {{locatario_documento}}</p>
+                <p><strong>Endereço:</strong> {{locatario_endereco}}</p>
+                <p><strong>Cidade:</strong> {{locatario_cidade}} - {{locatario_estado}}</p>
+                <p><strong>CEP:</strong> {{locatario_cep}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="property-details">
+        <div class="property-title">Dados do Imóvel</div>
+        <table class="table">
+            <tr>
+                <th>Endereço</th>
+                <td>{{imovel_endereco}}</td>
+            </tr>
+            <tr>
+                <th>Tipo</th>
+                <td>{{imovel_tipo}}</td>
+            </tr>
+            <tr>
+                <th>Cidade/Estado</th>
+                <td>{{imovel_cidade}} - {{imovel_estado}}</td>
+            </tr>
+            <tr>
+                <th>CEP</th>
+                <td>{{imovel_cep}}</td>
+            </tr>
+            <tr>
+                <th>Valor do Aluguel</th>
+                <td class="value">R$ {{valor_aluguel}}</td>
+            </tr>
+            <tr>
+                <th>Vigência</th>
+                <td>{{data_inicio}} até {{data_fim}}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="clauses">
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 1ª - DO OBJETO:</span>
+            <span class="clause-content">
+                O LOCADOR dá em locação ao LOCATÁRIO, que aceita, o imóvel descrito acima, 
+                destinado exclusivamente para fins residenciais, em perfeito estado de 
+                conservação e funcionamento.
+            </span>
+        </div>
+
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 2ª - DO PRAZO:</span>
+            <span class="clause-content">
+                A locação vigorará pelo prazo de <span class="value">{{duracao_contrato}}</span>, 
+                iniciando-se em <span class="value">{{data_inicio}}</span> e findando-se em 
+                <span class="value">{{data_fim}}</span>, podendo ser renovado por acordo entre as partes.
+            </span>
+        </div>
+
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 3ª - DO ALUGUEL:</span>
+            <span class="clause-content">
+                O LOCATÁRIO pagará ao LOCADOR o valor mensal de 
+                <span class="value">R$ {{valor_aluguel}} ({{valor_aluguel_extenso}})</span>, 
+                vencível todo dia <span class="value">{{dia_vencimento}}</span> de cada mês, 
+                preferencialmente via transferência bancária ou PIX.
+            </span>
+        </div>
+
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 4ª - DOS ENCARGOS:</span>
+            <span class="clause-content">
+                Correrão por conta do LOCATÁRIO as despesas de energia elétrica, água, gás, 
+                telefone, internet, condomínio (quando houver), IPTU e demais taxas e tributos 
+                incidentes sobre o imóvel durante a vigência desta locação.
+            </span>
+        </div>
+
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 5ª - DO DEPÓSITO CAUÇÃO:</span>
+            <span class="clause-content">
+                O LOCATÁRIO depositou a quantia de <span class="value">R$ {{valor_caucao}}</span> 
+                a título de caução, que será devolvida ao final do contrato, deduzidas eventuais 
+                despesas com reparos necessários à conservação do imóvel.
+            </span>
+        </div>
+
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 6ª - DAS OBRIGAÇÕES DO LOCATÁRIO:</span>
+            <span class="clause-content">
+                O LOCATÁRIO obriga-se a: a) usar o imóvel com cuidado, mantendo-o em bom estado 
+                de conservação; b) não transferir este contrato nem sublocar o imóvel sem 
+                autorização por escrito do LOCADOR; c) permitir vistorias mediante agendamento 
+                prévio; d) restituir o imóvel no final da locação nas mesmas condições em que o recebeu.
+            </span>
+        </div>
+
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 7ª - DA RESCISÃO:</span>
+            <span class="clause-content">
+                Qualquer das partes poderá rescindir este contrato mediante aviso prévio de 30 
+                (trinta) dias. Em caso de descumprimento das obrigações contratuais, o contrato 
+                poderá ser rescindido independentemente de aviso prévio.
+            </span>
+        </div>
+
+        <div class="clause">
+            <span class="clause-number">CLÁUSULA 8ª - DO FORO:</span>
+            <span class="clause-content">
+                Fica eleito o foro da comarca de <span class="value">{{comarca}}</span> para 
+                dirimir quaisquer questões oriundas deste contrato, renunciando as partes a 
+                qualquer outro, por mais privilegiado que seja.
+            </span>
+        </div>
+    </div>
+
+    <div class="legal-notice">
+        <strong>AVISO LEGAL:</strong> Este contrato foi gerado automaticamente pelo sistema 
+        ContratoRápido e deve ser revisado por um advogado antes da assinatura. O sistema não 
+        substitui a consulta jurídica profissional. Em conformidade com a Lei nº 8.245/91 
+        (Lei do Inquilinato) e demais normas aplicáveis.
+    </div>
+
+    <div class="date-location">
+        <p>{{cidade_assinatura}}, {{data_assinatura}}</p>
+    </div>
+
+    <div class="signature-section">
+        <div class="signature-block">
+            <div class="signature-line"></div>
+            <p><strong>{{locador_nome}}</strong></p>
+            <p>LOCADOR(A)</p>
+            <p>CPF/CNPJ: {{locador_documento}}</p>
+        </div>
+
+        <div class="signature-block">
+            <div class="signature-line"></div>
+            <p><strong>{{locatario_nome}}</strong></p>
+            <p>LOCATÁRIO(A)</p>
+            <p>CPF: {{locatario_documento}}</p>
+        </div>
+    </div>
+
+    <div class="legal-notice" style="margin-top: 50px; font-size: 8pt;">
+        <p><strong>Documento gerado por:</strong> ContratoRápido - Sistema de Geração Automatizada de Contratos</p>
+        <p><strong>Data de geração:</strong> {{data_geracao}}</p>
+        <p><strong>ID do documento:</strong> {{documento_id}}</p>
+        <p><strong>Conformidade:</strong> Lei nº 8.245/91, LGPD (Lei nº 13.709/18), Código Civil Brasileiro</p>
+    </div>
+</body>
+</html>

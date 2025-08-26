@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContratoRápido - Geração de Contratos via WhatsApp</title>
+    <meta name="description" content="Crie contratos de aluguel completos e seguros em minutos pelo WhatsApp. Solução prática e moderna para o mercado brasileiro.">
+    <meta name="keywords" content="contrato aluguel, whatsapp, geração automática, brasil, imóvel, locação">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://contratorapido.app.br/">
+    <meta property="og:title" content="ContratoRápido - Contratos de Aluguel via WhatsApp">
+    <meta property="og:description" content="Crie contratos completos em minutos pelo WhatsApp. Prático, rápido e seguro.">
+    <meta property="og:image" content="https://contratorapido.app.br/assets/og-image.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://contratorapido.app.br/">
+    <meta property="twitter:title" content="ContratoRápido - Contratos via WhatsApp">
+    <meta property="twitter:description" content="Crie contratos de aluguel em minutos pelo WhatsApp.">
+
+    <link rel="canonical" href="https://contratorapido.app.br/">
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Circular, -apple-system, BlinkMacSystemFont, 'Segoe UI', roboto, oxygen-sans, ubuntu, cantarell, 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: #ffffff;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header - JotForm inspired */
+        .header {
+            background: linear-gradient(135deg, #0a1551 0%, #117AF5 50%, #2497EA 100%);
+            color: white;
+            padding: 4rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0.1"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="50" r="50" fill="url(%23g)"/></svg>') no-repeat center;
+            background-size: 200px 200px;
+            opacity: 0.3;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 400;
+        }
+
+        /* Hero Section - JotForm Centered Style */
+        .hero {
+            padding: 8rem 0 6rem;
+            background: linear-gradient(135deg, #f8fffe 0%, #f0fdf9 30%, #ecfdf5 60%, #f7fee7 100%);
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto 4rem;
+        }
+
+        .hero-content h2 {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            margin-bottom: 1.5rem;
+            color: #0a1551;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .hero-content p {
+            font-size: 1.25rem;
+            margin-bottom: 2.5rem;
+            color: #4b5563;
+            line-height: 1.7;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-demo {
+            display: flex;
+            justify-content: center;
+            margin-top: 3rem;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+            background: linear-gradient(135deg, #1EBE58 0%, #0D7A70 100%);
+        }
+
+        .cta-button svg {
+            margin-right: 0.75rem;
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Demo Card - JotForm Style */
+        .demo-card {
+            background: white;
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+            border: 1px solid rgba(255,255,255,0.8);
+            max-width: 700px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(17,122,245,0.2) 50%, transparent 100%);
+        }
+
+        .demo-phone {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .demo-header h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #0a1551;
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-messages {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            padding: 0.5rem;
+            height: 900px;
+            position: relative;
+            background: transparent;
+        }
+
+        .conversation-image {
+            width: 100%;
+            height: auto;
+            max-width: 700px;
+            max-height: 840px;
+            object-fit: contain;
+            border-radius: 16px;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 18px;
+            max-width: 85%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            animation: messageSlide 0.5s ease-out;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #dcf8c6 0%, #c5f2a6 100%);
+            margin-left: auto;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.bot {
+            background: white;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Features Section - JotForm Cards Style */
+        .features {
+            padding: 6rem 0;
+            background: #fafbff;
+        }
+
+        .features h2 {
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: clamp(2rem, 3vw, 2.5rem);
+            color: #0a1551;
+            font-weight: 700;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            position: relative;
+            padding: 0;
+            border-radius: 24px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border: 1px solid rgba(255,255,255,0.8);
+            min-height: 320px;
+        }
+
+        .feature-card:nth-child(1) {
+            background: linear-gradient(180deg, #f0fdf4 0%, #e6fffa 30%, #ffffff 100%);
+            position: relative;
+            overflow: hidden;
+            min-height: 420px;
+        }
+
+        .feature-card:nth-child(2) {
+            background: linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%);
+        }
+
+        .feature-card:nth-child(3) {
+            background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%);
+        }
+
+        .feature-card:nth-child(4) {
+            background: linear-gradient(180deg, #f3e8ff 0%, #ede9fe 30%, #ffffff 100%);
+            position: relative;
+            overflow: hidden;
+            min-height: 420px;
+        }
+
+        .feature-card:nth-child(5) {
+            background: linear-gradient(180deg, #fef3c7 0%, #fef9e7 30%, #ffffff 100%);
+            position: relative;
+            overflow: hidden;
+            min-height: 420px;
+        }
+
+        .feature-card:nth-child(6) {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        }
+
+        /* Grid layout with alternating card sizes */
+        .feature-card:nth-child(1) { grid-column: span 2; }
+        .feature-card:nth-child(2) { grid-column: span 1; }
+        .feature-card:nth-child(3) { grid-column: span 1; }
+        .feature-card:nth-child(4) { grid-column: span 2; }
+        .feature-card:nth-child(5) { grid-column: span 2; }
+        .feature-card:nth-child(6) { grid-column: span 1; }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+        }
+
+        .feature-image-area {
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .feature-card:nth-child(1) .feature-image-area {
+            background-image: url('./images/legal.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            height: 330px;
+            margin-top: 36px;
+        }
+
+        .feature-card:nth-child(1) .feature-icon {
+            display: none;
+        }
+
+        .feature-card:nth-child(5) .feature-image-area {
+            background-image: url('./images/ia_prospect.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            height: 330px;
+            margin-top: 36px;
+        }
+
+        .feature-card:nth-child(5) .feature-icon {
+            display: none;
+        }
+
+        .feature-card:nth-child(4) .feature-image-area {
+            background-image: url('./images/garantias.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            height: 330px;
+            margin-top: 36px;
+        }
+
+        .feature-card:nth-child(4) .feature-icon {
+            display: none;
+        }
+
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon svg {
+            width: 40px;
+            height: 40px;
+            color: #0a1551;
+        }
+
+        .feature-content {
+            padding: 0 2rem 2rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 0.75rem;
+            color: #0a1551;
+            font-weight: 600;
+            font-size: 1.375rem;
+            line-height: 1.3;
+        }
+
+        .feature-card p {
+            color: #6b7280;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* How it Works - Modern Steps */
+        .how-it-works {
+            padding: 6rem 0;
+            background: white;
+        }
+
+        .how-it-works h2 {
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: clamp(2rem, 3vw, 2.5rem);
+            color: #0a1551;
+            font-weight: 700;
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            background: linear-gradient(135deg, #fafbff 0%, #f3f4f6 100%);
+            padding: 2.5rem;
+            border-radius: 24px;
+            text-align: center;
+            position: relative;
+            border: 1px solid rgba(17, 122, 245, 0.1);
+        }
+
+        .step-number {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #117AF5 0%, #7923DD 100%);
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .step-card h3 {
+            margin: 1rem 0;
+            color: #0a1551;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .step-card p {
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        /* Footer - Modern Design */
+        .footer {
+            background: linear-gradient(135deg, #0a1551 0%, #1e293b 100%);
+            color: white;
+            padding: 4rem 0 2rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .footer-section a {
+            color: #cbd5e1;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: #117AF5;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 2rem;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 6rem 0 4rem;
+            }
+
+            .hero-content {
+                margin-bottom: 2.5rem;
+            }
+
+            .demo-card {
+                max-width: 100%;
+                padding: 1.5rem;
+            }
+
+            .conversation-image {
+                max-width: 320px;
+                max-height: 400px;
+            }
+
+            .demo-messages {
+                height: 450px;
+            }
+
+            .container {
+                padding: 0 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Reset grid spans on mobile */
+            .feature-card:nth-child(1),
+            .feature-card:nth-child(2),
+            .feature-card:nth-child(3),
+            .feature-card:nth-child(4),
+            .feature-card:nth-child(5),
+            .feature-card:nth-child(6) {
+                grid-column: span 1;
+            }
+
+            .feature-image-area {
+                height: 120px;
+            }
+
+            .feature-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .feature-icon svg {
+                width: 30px;
+                height: 30px;
+            }
+
+            .feature-content {
+                padding: 0 1.5rem 1.5rem;
+            }
+
+            .steps-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* LGPD Banner - Modern Style */
+        .lgpd-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #0a1551 0%, #1e293b 100%);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 1.5rem;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+        }
+
+        .lgpd-banner.show {
+            display: block;
+        }
+
+        .lgpd-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .lgpd-text {
+            flex: 1;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .lgpd-text a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .lgpd-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .lgpd-button {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .lgpd-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+        }
+
+        .lgpd-button.secondary {
+            background: transparent;
+            border: 1px solid #25D366;
+        }
+
+        .lgpd-button.secondary:hover {
+            background: rgba(37, 211, 102, 0.1);
+        }
+
+        /* Additional animations and effects */
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .slide-up {
+            transform: translateY(30px);
+            opacity: 0;
+            animation: slideUp 0.8s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 6rem 0;
+            background: white;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .pricing-header h2 {
+            font-size: clamp(2rem, 3vw, 2.5rem);
+            color: #0a1551;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .pricing-header p {
+            font-size: 1.125rem;
+            color: #6b7280;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            border: 2px solid rgba(0,0,0,0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            text-align: center;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+        }
+
+        .pricing-card.featured {
+            border: 2px solid #25D366;
+            transform: scale(1.05);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-4px);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .pricing-header-card {
+            margin-bottom: 2rem;
+        }
+
+        .pricing-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: #6b7280;
+        }
+
+        .pricing-icon.featured {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+        }
+
+        .pricing-header-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0a1551;
+            margin-bottom: 0.5rem;
+        }
+
+        .pricing-subtitle {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        .pricing-price {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .price-currency {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #0a1551;
+        }
+
+        .price-amount {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #0a1551;
+        }
+
+        .price-period {
+            font-size: 1rem;
+            color: #6b7280;
+        }
+
+        .pricing-value {
+            margin-bottom: 2rem;
+        }
+
+        .savings {
+            display: block;
+            color: #25D366;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .comparison {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .pricing-features {
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+
+        .pricing-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.125rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+        }
+
+        .pricing-button.primary {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+        }
+
+        .pricing-button.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+            background: linear-gradient(135deg, #1EBE58 0%, #0D7A70 100%);
+        }
+
+        .pricing-button.secondary {
+            background: white;
+            color: #0a1551;
+            border: 2px solid #0a1551;
+        }
+
+        .pricing-button.secondary:hover {
+            background: #0a1551;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .pricing-notes {
+            max-width: 800px;
+            margin: 4rem auto 0;
+            text-align: center;
+        }
+
+        .pricing-notes p {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 6rem 0;
+            background: #fafbff;
+        }
+
+        .faq-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .faq-header h2 {
+            font-size: clamp(2rem, 3vw, 2.5rem);
+            color: #0a1551;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .faq-header p {
+            font-size: 1.125rem;
+            color: #6b7280;
+        }
+
+        .faq-grid {
+            display: grid;
+            gap: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .faq-question {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .faq-question:hover {
+            background: #f8fafc;
+        }
+
+        .faq-question h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #0a1551;
+            margin: 0;
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .faq-icon {
+            width: 24px;
+            height: 24px;
+            color: #6b7280;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+            color: #117AF5;
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem 1.5rem;
+            color: #4b5563;
+            line-height: 1.7;
+            display: none;
+        }
+
+        .faq-item.active .faq-answer {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Navigation - Clean JotForm Style */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0a1551;
+            text-decoration: none;
+            letter-spacing: -0.02em;
+            gap: 0.75rem;
+        }
+
+        .nav-logo svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-item a {
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            padding: 0.5rem 0;
+            position: relative;
+        }
+
+        .nav-item a:hover {
+            color: #117AF5;
+        }
+
+        .nav-item a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(90deg, #117AF5 0%, #2497EA 100%);
+            transition: width 0.3s ease;
+        }
+
+        .nav-item a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(37, 211, 102, 0.25);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4);
+            background: linear-gradient(135deg, #1EBE58 0%, #0D7A70 100%);
+        }
+
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: #4b5563;
+        }
+
+        .nav-toggle svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Mobile Navigation */
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                top: 72px;
+                left: 0;
+                right: 0;
+                background: rgba(255, 255, 255, 0.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                padding: 2rem;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                transform: translateY(-100%);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                gap: 1.5rem;
+            }
+
+            .nav-menu.active {
+                transform: translateY(0);
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .nav-toggle {
+                display: block;
+            }
+
+            .nav-cta {
+                margin-top: 1rem;
+                text-align: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clip-path="url(#clip0_42_86)">
+                        <path d="M3 20V4H10V9H15V10.5L17 8.5V8L11 2H3C1.9 2 1 2.9 1 4V20C1 21.1 1.9 22 3 22H15C16.1 22 17 21.1 17 20H3Z" fill="#38B0E3"/>
+                        <path d="M10 17.1001C10.1 17.1001 10.3 17.0001 10.5 17.0001V18.8001H10H9L8.4 16.3001L5.5 18.9001H4L5 13.9002H6.5L5.9 16.6001L8 14.9002H9.5L10 17.1001Z" fill="#FFB629"/>
+                        <path d="M13.3 18.8001L19 13.1002L16.7 10.8002L11 16.5002V18.8001H13.3Z" fill="#0099FF"/>
+                        <path d="M21.4 13.8C21.7 13.5 22 13.2 22 12.9C22.1 12.6 21.8 12.3 21.5 12C21.3 11.8 21.1 11.6 21.1 11.4C21.1 11.2 21.3 11 21.5 10.8C21.7 10.5 21.7 10.1 21.5 9.89998L20.1 8.49998C19.8 8.29998 19.4 8.29998 19.2 8.49998L17 10.6L19.3 12.9L20 12.2L20.6 12.8L18 15.4L18.9 16.3L21.4 13.8Z" fill="#FF6101"/>
+                    </g>
+                    <defs>
+                        <clipPath id="clip0_42_86">
+                            <rect width="24" height="24" fill="white"/>
+                        </clipPath>
+                    </defs>
+                </svg>
+                ContratoRápido
+            </a>
+            
+            <ul class="nav-menu" id="nav-menu">
+                <li class="nav-item"><a href="#inicio">Início</a></li>
+                <li class="nav-item"><a href="#como-funciona">Como Funciona</a></li>
+                <li class="nav-item"><a href="#recursos">Recursos</a></li>
+                <li class="nav-item"><a href="#precos">Preços</a></li>
+                <li class="nav-item"><a href="#faq">FAQ</a></li>
+                <li class="nav-item"><a href="contact.html">Contato</a></li>
+            </ul>
+
+            <button class="nav-toggle" id="nav-toggle">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content slide-up">
+                <h2>Contratos de Aluguel via WhatsApp</h2>
+                <p>
+                    Crie contratos de aluguel completos e juridicamente válidos em minutos usando apenas o WhatsApp. 
+                    Nossa IA converte conversas naturais em documentos profissionais prontos para assinatura.
+                </p>
+                <a href="https://wa.me/5511999999999?text=Olá! Quero criar um contrato de aluguel" class="cta-button" target="_blank">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.570-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.496"/>
+                    </svg>
+                    Começar Gratuitamente
+                </a>
+            </div>
+            
+            <div class="hero-demo">
+                <div class="demo-card slide-up">
+                    <div class="demo-phone">
+                        <div class="demo-header">
+                            <h3>Resumo do funcionamento</h3>
+                        </div>
+                        <div class="demo-messages">
+                            <img src="./images/conversation.png" alt="Demonstração da conversa no WhatsApp" class="conversation-image">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="recursos">
+        <div class="container">
+            <h2 class="slide-up">Por que escolher o ContratoRápido?</h2>
+            <div class="features-grid">
+                <div class="feature-card slide-up">
+                    <div class="feature-image-area">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h3>100% Conformidade Legal</h3>
+                        <p>Contratos elaborados de acordo com a Lei do Inquilinato (8.245/91), Código Civil Brasileiro e validados juridicamente por especialistas em direito imobiliário.</p>
+                    </div>
+                </div>
+                
+                <div class="feature-card slide-up">
+                    <div class="feature-image-area">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Velocidade Incomparável</h3>
+                        <p>Contratos profissionais prontos em menos de 3 minutos. Nossa IA processa informações instantaneamente, eliminando horas de trabalho manual.</p>
+                    </div>
+                </div>
+                
+                <div class="feature-card slide-up">
+                    <div class="feature-image-area">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 1l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Segurança e Privacidade</h3>
+                        <p>Dados protegidos por criptografia de nível bancário e conformidade total com a LGPD. Seus documentos ficam seguros e confidenciais em nossa infraestrutura.</p>
+                    </div>
+                </div>
+                
+                <div class="feature-card slide-up">
+                    <div class="feature-image-area">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Personalização Inteligente</h3>
+                        <p>Cada contrato é único e personalizado conforme suas necessidades específicas. Cláusulas automáticas baseadas no tipo de propriedade e situação particular.</p>
+                    </div>
+                </div>
+                
+                <div class="feature-card slide-up">
+                    <div class="feature-image-area">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Inteligência Artificial Avançada</h3>
+                        <p>Tecnologia de ponta que compreende linguagem natural e extrai informações precisas das conversas, garantindo contratos personalizados e completos.</p>
+                    </div>
+                </div>
+                
+                <div class="feature-card slide-up">
+                    <div class="feature-image-area">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" fill="none"/><path fill="#0A1551" d="M23.328 19.177c-.401-.203-2.354-1.156-2.719-1.292c-.365-.13-.63-.198-.896.203c-.26.391-1.026 1.286-1.26 1.547s-.464.281-.859.104c-.401-.203-1.682-.62-3.203-1.984c-1.188-1.057-1.979-2.359-2.214-2.76c-.234-.396-.026-.62.172-.818c.182-.182.401-.458.604-.698c.193-.24.255-.401.396-.661c.13-.281.063-.5-.036-.698s-.896-2.161-1.229-2.943c-.318-.776-.651-.677-.896-.677c-.229-.021-.495-.021-.76-.021s-.698.099-1.063.479c-.365.401-1.396 1.359-1.396 3.297c0 1.943 1.427 3.823 1.625 4.104c.203.26 2.807 4.26 6.802 5.979c.953.401 1.693.641 2.271.839c.953.302 1.823.26 2.51.161c.76-.125 2.354-.964 2.688-1.901c.339-.943.339-1.724.24-1.901c-.099-.182-.359-.281-.76-.458zM16.083 29h-.021c-2.365 0-4.703-.641-6.745-1.839l-.479-.286l-5 1.302l1.344-4.865l-.323-.5a13.17 13.17 0 0 1-2.021-7.01c0-7.26 5.943-13.182 13.255-13.182c3.542 0 6.865 1.38 9.365 3.88a13.06 13.06 0 0 1 3.88 9.323C29.328 23.078 23.39 29 16.088 29zM27.359 4.599C24.317 1.661 20.317 0 16.062 0C7.286 0 .14 7.115.135 15.859c0 2.792.729 5.516 2.125 7.927L0 32l8.448-2.203a16.1 16.1 0 0 0 7.615 1.932h.005c8.781 0 15.927-7.115 15.932-15.865c0-4.234-1.651-8.219-4.661-11.214z"/></svg>
+                        </div>
+                    </div>
+                    <div class="feature-content">
+                        <h3>Facilidade Extrema</h3>
+                        <p>Interface 100% via WhatsApp que todos já conhecem. Sem downloads, sem cadastros complexos, sem treinamento - apenas conversas naturais que viram contratos.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works -->
+    <section class="how-it-works" id="como-funciona">
+        <div class="container">
+            <h2 class="slide-up">Como Funciona em 3 Passos Simples</h2>
+            <div class="steps-grid">
+                <div class="step-card slide-up">
+                    <div class="step-number">1</div>
+                    <h3>Inicie a Conversa</h3>
+                    <p>Clique no botão WhatsApp e inicie uma conversa natural. Conte sobre o imóvel, valor do aluguel e detalhes da locação como se estivesse falando com um amigo.</p>
+                </div>
+                
+                <div class="step-card slide-up">
+                    <div class="step-number">2</div>
+                    <h3>IA Processa Informações</h3>
+                    <p>Nossa inteligência artificial avançada analisa sua conversa, extrai dados importantes e faz perguntas complementares para garantir um contrato completo e preciso.</p>
+                </div>
+                
+                <div class="step-card slide-up">
+                    <div class="step-number">3</div>
+                    <h3>Receba o PDF Pronto</h3>
+                    <p>Em menos de 3 minutos, você recebe um contrato profissional, juridicamente válido e personalizado, pronto para assinatura e uso imediato.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="precos">
+        <div class="container">
+            <div class="pricing-header">
+                <h2 class="slide-up">Planos e Preços</h2>
+                <p class="slide-up">Escolha o plano ideal para suas necessidades</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card slide-up">
+                    <div class="pricing-header-card">
+                        <div class="pricing-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        <h3>Pay-per-Use</h3>
+                        <p class="pricing-subtitle">Para uso esporádico</p>
+                    </div>
+                    
+                    <div class="pricing-price">
+                        <span class="price-currency">R$</span>
+                        <span class="price-amount">49</span>
+                        <span class="price-period">/contrato</span>
+                    </div>
+                    
+                    <div class="pricing-features">
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>1 contrato por pagamento</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Geração instantânea</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>PDF profissional</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>100% conformidade legal</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Suporte via WhatsApp</span>
+                        </div>
+                    </div>
+                    
+                    <div class="pricing-cta">
+                        <a href="https://wa.me/5511999999999?text=Olá! Quero usar o plano Pay-per-Use" class="pricing-button secondary" target="_blank">
+                            Criar Contrato
+                        </a>
+                    </div>
+                </div>
+
+                <div class="pricing-card featured slide-up">
+                    <div class="popular-badge">Mais Popular</div>
+                    <div class="pricing-header-card">
+                        <div class="pricing-icon featured">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                            </svg>
+                        </div>
+                        <h3>Assinatura Mensal</h3>
+                        <p class="pricing-subtitle">Ideal para profissionais</p>
+                    </div>
+                    
+                    <div class="pricing-price">
+                        <span class="price-currency">R$</span>
+                        <span class="price-amount">29</span>
+                        <span class="price-period">/mês</span>
+                    </div>
+                    
+                    <div class="pricing-value">
+                        <span class="savings">Economia de até 85%</span>
+                        <span class="comparison">vs. R$ 49 por contrato</span>
+                    </div>
+                    
+                    <div class="pricing-features">
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span><strong>Até 10 contratos/mês</strong></span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Geração instantânea</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>PDF profissional</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>100% conformidade legal</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Histórico de contratos</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Suporte prioritário</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>Cancele quando quiser</span>
+                        </div>
+                    </div>
+                    
+                    <div class="pricing-cta">
+                        <a href="https://wa.me/5511999999999?text=Olá! Quero assinar o plano mensal de R$29" class="pricing-button primary" target="_blank">
+                            Começar Agora
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pricing-notes">
+                <p class="slide-up">
+                    <strong>💡 Dica:</strong> Com o plano mensal, cada contrato sai por apenas R$ 2,90. 
+                    Ideal para corretores, imobiliárias e proprietários que fazem múltiplas locações.
+                </p>
+                <p class="slide-up">
+                    <strong>🔒 Garantia:</strong> Todos os planos incluem garantia de satisfação de 7 dias. 
+                    Não gostou? Devolvemos seu dinheiro, sem perguntas.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <div class="faq-header">
+                <h2 class="slide-up">Perguntas Frequentes</h2>
+                <p class="slide-up">Tire suas dúvidas sobre o ContratoRápido</p>
+            </div>
+            
+            <div class="faq-grid">
+                <div class="faq-item slide-up" data-faq="1">
+                    <div class="faq-question">
+                        <h3>Como funciona a geração de contratos pelo WhatsApp?</h3>
+                        <div class="faq-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Nosso sistema utiliza inteligência artificial para analisar suas conversas no WhatsApp e extrair automaticamente as informações necessárias para criar um contrato de aluguel completo. Você apenas conversa naturalmente sobre o imóvel, dados do locador e inquilino, e nossa IA gera um documento juridicamente válido em minutos.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item slide-up" data-faq="2">
+                    <div class="faq-question">
+                        <h3>Os contratos são realmente válidos juridicamente?</h3>
+                        <div class="faq-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim! Todos os contratos são elaborados seguindo rigorosamente a Lei do Inquilinato (8.245/91) e o Código Civil Brasileiro. Nossos modelos foram validados por especialistas em direito imobiliário e incluem todas as cláusulas essenciais para garantir a segurança jurídica de ambas as partes.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item slide-up" data-faq="3">
+                    <div class="faq-question">
+                        <h3>Quanto tempo leva para gerar um contrato?</h3>
+                        <div class="faq-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <p>O processo é extremamente rápido! Em média, você recebe seu contrato pronto em menos de 3 minutos após fornecer todas as informações necessárias. Nossa IA processa os dados instantaneamente e gera o documento em formato PDF profissional.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item slide-up" data-faq="4">
+                    <div class="faq-question">
+                        <h3>Meus dados ficam seguros?</h3>
+                        <div class="faq-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Absolutamente! Utilizamos criptografia de nível bancário para proteger todas as informações. Somos 100% conformes com a LGPD e seus dados são armazenados de forma segura em nossa infraestrutura protegida. Nunca compartilhamos informações pessoais com terceiros.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item slide-up" data-faq="5">
+                    <div class="faq-question">
+                        <h3>Posso personalizar as cláusulas do contrato?</h3>
+                        <div class="faq-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sim! Cada contrato é automaticamente personalizado com base nas informações fornecidas. Nossa IA inclui cláusulas específicas conforme o tipo de propriedade, modalidade de garantia, valores e condições particulares. O sistema garante que cada contrato seja único e adequado à sua situação.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item slide-up" data-faq="6">
+                    <div class="faq-question">
+                        <h3>Preciso instalar algum aplicativo?</h3>
+                        <div class="faq-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Não! Toda a experiência acontece através do WhatsApp que você já tem instalado. Não há necessidade de downloads adicionais, cadastros complexos ou treinamentos. É só conversar naturalmente conosco pelo WhatsApp e receber seu contrato pronto.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contato">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>ContratoRápido</h3>
+                    <p>Solução moderna para geração de contratos de aluguel via WhatsApp. Prático, rápido e seguro.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Serviços</h3>
+                    <a href="#recursos">Recursos</a>
+                    <a href="#como-funciona">Como Funciona</a>
+                    <a href="#precos">Preços</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Legal</h3>
+                    <a href="/privacy-policy.html">Política de Privacidade</a>
+                    <a href="/terms-of-service.html">Termos de Uso</a>
+                    <a href="#faq">FAQ</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Contato</h3>
+                    <a href="mailto:contato@contratorapido.app.br">contato@contratorapido.app.br</a>
+                    <a href="mailto:suporte@contratorapido.app.br">suporte@contratorapido.app.br</a>
+                    <a href="mailto:dpo@contratorapido.app.br">dpo@contratorapido.app.br</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 ContratoRápido. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- LGPD Consent Banner -->
+    <div id="lgpd-banner" class="lgpd-banner">
+        <div class="lgpd-content">
+            <div class="lgpd-text">
+                Este site utiliza cookies para melhorar sua experiência. Ao continuar navegando, você concorda com nossa 
+                <a href="/privacy-policy.html" style="color: #25D366;">Política de Privacidade</a> e com o tratamento de seus dados pessoais conforme a LGPD.
+            </div>
+            <div class="lgpd-buttons">
+                <button class="lgpd-button secondary" onclick="declineCookies()">Recusar</button>
+                <button class="lgpd-button" onclick="acceptCookies()">Aceitar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LGPD Consent Management
+        function showLGPDBanner() {
+            const consent = localStorage.getItem('lgpd-consent');
+            if (!consent) {
+                document.getElementById('lgpd-banner').classList.add('show');
+            }
+        }
+
+        function acceptCookies() {
+            localStorage.setItem('lgpd-consent', 'accepted');
+            localStorage.setItem('lgpd-consent-date', new Date().toISOString());
+            document.getElementById('lgpd-banner').classList.remove('show');
+            
+            // Initialize analytics only after consent
+            initializeAnalytics();
+        }
+
+        function declineCookies() {
+            localStorage.setItem('lgpd-consent', 'declined');
+            localStorage.setItem('lgpd-consent-date', new Date().toISOString());
+            document.getElementById('lgpd-banner').classList.remove('show');
+        }
+
+        function initializeAnalytics() {
+            // Google Analytics ou outras ferramentas apenas com consentimento
+            console.log('Analytics initialized with user consent');
+        }
+
+        // Demo animation
+        function animateDemo() {
+            const conversationImage = document.querySelector('.conversation-image');
+            if (conversationImage) {
+                conversationImage.style.opacity = '0';
+                conversationImage.style.transform = 'scale(0.9)';
+                
+                setTimeout(() => {
+                    conversationImage.style.transition = 'all 0.8s ease';
+                    conversationImage.style.opacity = '1';
+                    conversationImage.style.transform = 'scale(1)';
+                }, 500);
+            }
+        }
+
+        // Navigation functionality
+        function initNavigation() {
+            const navbar = document.getElementById('navbar');
+            const navToggle = document.getElementById('nav-toggle');
+            const navMenu = document.getElementById('nav-menu');
+
+            // Navbar scroll effect
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+
+            // Mobile menu toggle
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+                
+                // Update hamburger icon
+                const svg = navToggle.querySelector('svg');
+                if (navMenu.classList.contains('active')) {
+                    svg.innerHTML = '<path d="M18.3 5.71a.996.996 0 00-1.41 0L12 10.59 7.11 5.7A.996.996 0 005.7 7.11L10.59 12 5.7 16.89a.996.996 0 101.41 1.41L12 13.41l4.89 4.89a.996.996 0 001.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/>';
+                } else {
+                    svg.innerHTML = '<path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>';
+                }
+            });
+
+            // Close mobile menu when clicking on links
+            document.querySelectorAll('.nav-item a').forEach(link => {
+                link.addEventListener('click', () => {
+                    navMenu.classList.remove('active');
+                    const svg = navToggle.querySelector('svg');
+                    svg.innerHTML = '<path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>';
+                });
+            });
+        }
+
+        // FAQ functionality
+        function initFAQ() {
+            const faqItems = document.querySelectorAll('.faq-item');
+            
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                
+                question.addEventListener('click', () => {
+                    const isActive = item.classList.contains('active');
+                    
+                    // Close all other FAQ items
+                    faqItems.forEach(otherItem => {
+                        if (otherItem !== item) {
+                            otherItem.classList.remove('active');
+                        }
+                    });
+                    
+                    // Toggle current item
+                    if (isActive) {
+                        item.classList.remove('active');
+                    } else {
+                        item.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showLGPDBanner();
+            setTimeout(animateDemo, 1000);
+            initNavigation();
+            initFAQ();
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const offsetTop = target.offsetTop - 72; // Account for navbar height
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

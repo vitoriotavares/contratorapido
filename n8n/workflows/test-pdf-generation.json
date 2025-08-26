@@ -1,0 +1,138 @@
+{
+  "name": "Test PDF Generation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger-1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Sample contract data for testing\nconst contractData = {\n  // Locador (Landlord)\n  locador_nome: \"João da Silva Santos\",\n  locador_documento: \"123.456.789-00\",\n  locador_endereco: \"Rua das Flores, 123, Apto 45\",\n  locador_cidade: \"São Paulo\",\n  locador_estado: \"SP\", \n  locador_cep: \"01234-567\",\n  \n  // Locatário (Tenant)\n  locatario_nome: \"Maria Oliveira Costa\",\n  locatario_documento: \"987.654.321-00\",\n  locatario_endereco: \"Avenida Paulista, 1000, Apto 12\",\n  locatario_cidade: \"São Paulo\",\n  locatario_estado: \"SP\",\n  locatario_cep: \"01310-100\",\n  \n  // Imóvel (Property)\n  imovel_endereco: \"Rua dos Jardins, 456, Casa 2\", \n  imovel_tipo: \"Casa\",\n  imovel_cidade: \"São Paulo\",\n  imovel_estado: \"SP\",\n  imovel_cep: \"04567-890\",\n  \n  // Valores (Values)\n  valor_aluguel: \"2.500,00\",\n  valor_aluguel_extenso: \"dois mil e quinhentos reais\",\n  valor_caucao: \"5.000,00\",\n  dia_vencimento: \"05\",\n  \n  // Datas (Dates)\n  duracao_contrato: \"12 (doze) meses\",\n  data_inicio: \"01 de dezembro de 2024\",\n  data_fim: \"30 de novembro de 2025\",\n  \n  // Assinatura (Signature)\n  comarca: \"São Paulo/SP\",\n  cidade_assinatura: \"São Paulo/SP\",\n  data_assinatura: new Date().toLocaleDateString('pt-BR', { \n    day: '2-digit', \n    month: 'long', \n    year: 'numeric' \n  }),\n  \n  // Metadata\n  data_geracao: new Date().toLocaleString('pt-BR'),\n  documento_id: `CR-${Date.now()}-TEST`\n};\n\nreturn [{ json: contractData }];"
+      },
+      "id": "function-1", 
+      "name": "Generate Test Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "bodyContentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "files",
+              "value": "={{ $json.html_content }}",
+              "parameterType": "formBinaryData"
+            },
+            {
+              "name": "paperWidth",
+              "value": "8.5"
+            },
+            {
+              "name": "paperHeight", 
+              "value": "11"
+            },
+            {
+              "name": "marginTop",
+              "value": "0.39"
+            },
+            {
+              "name": "marginBottom",
+              "value": "0.39"
+            },
+            {
+              "name": "marginLeft", 
+              "value": "0.39"
+            },
+            {
+              "name": "marginRight",
+              "value": "0.39"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            },
+            {
+              "name": "waitDelay",
+              "value": "3s"
+            }\n          ]\n        },\n        \"options\": {\n          \"response\": {\n            \"response\": {\n              \"responseFormat\": \"file\"\n            }\n          }\n        }\n      },\n      \"id\": \"http-request-1\",\n      \"name\": \"Generate PDF\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"typeVersion\": 4,\n      \"position\": [900, 300]\n    },\n    {\n      \"parameters\": {\n        \"functionCode\": \"// HTML template for contract\\nconst template = `<!DOCTYPE html>\\n<html lang=\\\"pt-BR\\\">\\n<head>\\n    <meta charset=\\\"UTF-8\\\">\\n    <meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\">\\n    <title>Contrato de Locação Residencial</title>\\n    <style>\\n        body {\\n            font-family: 'Times New Roman', serif;\\n            font-size: 12pt;\\n            line-height: 1.6;\\n            color: #000;\\n            background: #fff;\\n            padding: 40px;\\n        }\\n        .header {\\n            text-align: center;\\n            margin-bottom: 30px;\\n            border-bottom: 2px solid #000;\\n            padding-bottom: 20px;\\n        }\\n        .header h1 {\\n            font-size: 18pt;\\n            font-weight: bold;\\n            text-transform: uppercase;\\n        }\\n        .parties {\\n            margin: 30px 0;\\n        }\\n        .party {\\n            margin-bottom: 25px;\\n            padding: 15px;\\n            border-left: 4px solid #333;\\n            background-color: #f9f9f9;\\n        }\\n        .party-title {\\n            font-weight: bold;\\n            font-size: 13pt;\\n            text-transform: uppercase;\\n            margin-bottom: 10px;\\n        }\\n        .value {\\n            font-weight: bold;\\n            text-decoration: underline;\\n        }\\n        .signature-section {\\n            margin-top: 50px;\\n        }\\n        .signature-block {\\n            margin: 40px 0;\\n            text-align: center;\\n        }\\n        .signature-line {\\n            border-top: 2px solid #000;\\n            width: 300px;\\n            margin: 30px auto 10px;\\n        }\\n    </style>\\n</head>\\n<body>\\n    <div class=\\\"header\\\">\\n        <h1>Contrato de Locação Residencial</h1>\\n        <div class=\\\"subtitle\\\">Instrumento Particular de Locação de Imóvel Residencial</div>\\n    </div>\\n\\n    <div class=\\\"parties\\\">\\n        <div class=\\\"party\\\">\\n            <div class=\\\"party-title\\\">Locador(a)</div>\\n            <p><strong>Nome:</strong> {{locador_nome}}</p>\\n            <p><strong>CPF/CNPJ:</strong> {{locador_documento}}</p>\\n            <p><strong>Endereço:</strong> {{locador_endereco}}</p>\\n            <p><strong>Cidade:</strong> {{locador_cidade}} - {{locador_estado}}</p>\\n        </div>\\n\\n        <div class=\\\"party\\\">\\n            <div class=\\\"party-title\\\">Locatário(a)</div>\\n            <p><strong>Nome:</strong> {{locatario_nome}}</p>\\n            <p><strong>CPF:</strong> {{locatario_documento}}</p>\\n            <p><strong>Endereço:</strong> {{locatario_endereco}}</p>\\n            <p><strong>Cidade:</strong> {{locatario_cidade}} - {{locatario_estado}}</p>\\n        </div>\\n    </div>\\n\\n    <div class=\\\"property-details\\\">\\n        <h3>Dados do Imóvel</h3>\\n        <p><strong>Endereço:</strong> {{imovel_endereco}}</p>\\n        <p><strong>Tipo:</strong> {{imovel_tipo}}</p>\\n        <p><strong>Valor do Aluguel:</strong> <span class=\\\"value\\\">R$ {{valor_aluguel}}</span></p>\\n        <p><strong>Vigência:</strong> {{data_inicio}} até {{data_fim}}</p>\\n    </div>\\n\\n    <div class=\\\"clauses\\\">\\n        <p><strong>CLÁUSULA 1ª:</strong> O LOCADOR dá em locação ao LOCATÁRIO o imóvel descrito acima.</p>\\n        <p><strong>CLÁUSULA 2ª:</strong> A locação vigorará pelo prazo de <span class=\\\"value\\\">{{duracao_contrato}}</span>.</p>\\n        <p><strong>CLÁUSULA 3ª:</strong> O valor do aluguel é de <span class=\\\"value\\\">R$ {{valor_aluguel}}</span>.</p>\\n    </div>\\n\\n    <div class=\\\"signature-section\\\">\\n        <p style=\\\"text-align: center;\\\">{{cidade_assinatura}}, {{data_assinatura}}</p>\\n        \\n        <div class=\\\"signature-block\\\">\\n            <div class=\\\"signature-line\\\"></div>\\n            <p><strong>{{locador_nome}}</strong></p>\\n            <p>LOCADOR(A)</p>\\n        </div>\\n\\n        <div class=\\\"signature-block\\\">\\n            <div class=\\\"signature-line\\\"></div>\\n            <p><strong>{{locatario_nome}}</strong></p>\\n            <p>LOCATÁRIO(A)</p>\\n        </div>\\n    </div>\\n\\n    <div style=\\\"margin-top: 30px; font-size: 8pt; text-align: center;\\\">\\n        <p>Documento gerado em: {{data_geracao}} | ID: {{documento_id}}</p>\\n    </div>\\n</body>\\n</html>`;\\n\\n// Replace template variables with actual data\\nlet html = template;\\nconst data = $json;\\n\\n// Replace all template variables\\nfor (const [key, value] of Object.entries(data)) {\\n  const regex = new RegExp(`{{${key}}}`, 'g');\\n  html = html.replace(regex, value);\\n}\\n\\nreturn [{ \\n  json: {\\n    ...data,\\n    html_content: html\\n  }\\n}];\"\n      },\n      \"id\": \"function-2\",\n      \"name\": \"Process Template\",\n      \"type\": \"n8n-nodes-base.function\",\n      \"typeVersion\": 1,\n      \"position\": [680, 300]\n    },\n    {\n      \"parameters\": {\n        \"functionCode\": \"// Validate PDF generation result\\nconst result = $json;\\nconst binary = $binary;\\n\\nlet validation = {\\n  success: false,\\n  file_size: 0,\\n  content_type: '',\\n  error: null\\n};\\n\\ntry {\\n  if (binary && binary.data) {\\n    validation.success = true;\\n    validation.file_size = binary.data.length || 0;\\n    validation.content_type = binary.mimeType || 'application/pdf';\\n    \\n    // Basic size validation\\n    if (validation.file_size < 1000) {\\n      validation.success = false;\\n      validation.error = 'PDF file too small, likely generation failed';\\n    }\\n  } else {\\n    validation.error = 'No binary data received from Gotenberg';\\n  }\\n} catch (error) {\\n  validation.error = error.message;\\n}\\n\\nreturn [{\\n  json: {\\n    ...result,\\n    pdf_validation: validation,\\n    generation_timestamp: new Date().toISOString()\\n  }\\n}];\"\n      },\n      \"id\": \"function-3\",\n      \"name\": \"Validate PDF\",\n      \"type\": \"n8n-nodes-base.function\",\n      \"typeVersion\": 1,\n      \"position\": [1120, 300]\n    }\n  ],\n  \"connections\": {\n    \"Manual Trigger\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Generate Test Data\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Generate Test Data\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Process Template\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Process Template\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Generate PDF\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Generate PDF\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Validate PDF\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    }\n  },\n  \"active\": false,\n  \"settings\": {},\n  \"versionId\": \"1\",\n  \"meta\": {\n    \"instanceId\": \"criador_contrato_pdf_test\"\n  },\n  \"id\": \"2\",\n  \"tags\": []\n}"
+      },
+      "id": "function-2",
+      "name": "Process Template",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Validate PDF generation result\nconst result = $json;\nconst binary = $binary;\n\nlet validation = {\n  success: false,\n  file_size: 0,\n  content_type: '',\n  error: null\n};\n\ntry {\n  if (binary && binary.data) {\n    validation.success = true;\n    validation.file_size = binary.data.length || 0;\n    validation.content_type = binary.mimeType || 'application/pdf';\n    \n    // Basic size validation\n    if (validation.file_size < 1000) {\n      validation.success = false;\n      validation.error = 'PDF file too small, likely generation failed';\n    }\n  } else {\n    validation.error = 'No binary data received from Gotenberg';\n  }\n} catch (error) {\n  validation.error = error.message;\n}\n\nreturn [{\n  json: {\n    ...result,\n    pdf_validation: validation,\n    generation_timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "function-3",
+      "name": "Validate PDF",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Test Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Test Data": {
+      "main": [
+        [
+          {
+            "node": "Process Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Template": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF": {
+      "main": [
+        [
+          {
+            "node": "Validate PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "meta": {
+    "instanceId": "criador_contrato_pdf_test"
+  },
+  "id": "2",
+  "tags": []
+}

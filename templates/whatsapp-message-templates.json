@@ -1,0 +1,111 @@
+{
+  "templates": {
+    "welcome_message": {
+      "name": "welcome_message",
+      "language": "pt_BR",
+      "category": "UTILITY",
+      "status": "PENDING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "Olá! 👋 Bem-vindo ao ContratoRápido!\n\nEu sou seu assistente para criar contratos de aluguel de forma rápida e segura.\n\nPara começar, me conte sobre o imóvel que você quer alugar:"
+        }
+      ]
+    },
+    "contract_ready": {
+      "name": "contract_ready",
+      "language": "pt_BR",
+      "category": "UTILITY", 
+      "status": "PENDING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "✅ Seu contrato está pronto!\n\nRevisão:\n• Tipo: {{1}}\n• Valor: R$ {{2}}\n• Vigência: {{3}}\n\nO documento em PDF será enviado em alguns segundos."
+        }
+      ]
+    },
+    "information_request": {
+      "name": "information_request",
+      "language": "pt_BR",
+      "category": "UTILITY",
+      "status": "PENDING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "Para gerar seu contrato, preciso de algumas informações:\n\n📍 **Dados do Imóvel:**\n• Endereço completo\n• Tipo (casa, apartamento, etc.)\n• Valor do aluguel\n\n👤 **Dados do Locador:**\n• Nome completo\n• CPF/CNPJ\n• Endereço\n\n👤 **Dados do Locatário:**\n• Nome completo\n• CPF\n• Endereço atual\n\nPode me enviar essas informações?"
+        }
+      ]
+    },
+    "processing_message": {
+      "name": "processing_message", 
+      "language": "pt_BR",
+      "category": "UTILITY",
+      "status": "PENDING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "⏳ Processando suas informações...\n\nEstou analisando os dados e gerando seu contrato personalizado.\n\nIsso pode levar alguns segundos. Aguarde!"
+        }
+      ]
+    },
+    "error_message": {
+      "name": "error_message",
+      "language": "pt_BR", 
+      "category": "UTILITY",
+      "status": "PENDING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "❌ Ops! Algo deu errado.\n\nPor favor, verifique se todas as informações estão corretas e tente novamente.\n\nSe o problema persistir, entre em contato conosco."
+        }
+      ]
+    },
+    "help_message": {
+      "name": "help_message",
+      "language": "pt_BR",
+      "category": "UTILITY", 
+      "status": "PENDING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "🆘 **Como funciona o ContratoRápido:**\n\n1️⃣ Me envie as informações do imóvel e das partes\n2️⃣ Eu processo e gero o contrato automaticamente\n3️⃣ Você recebe o PDF pronto para assinar\n\n💡 **Dicas:**\n• Seja específico com endereços\n• Inclua CPF/CNPJ corretos\n• Confirme valores e prazos\n\nPrecisa de ajuda específica? Me mande uma mensagem!"
+        }
+      ]
+    },
+    "consent_request": {
+      "name": "consent_request",
+      "language": "pt_BR",
+      "category": "UTILITY",
+      "status": "PENDING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "📋 **Consentimento LGPD**\n\nPara gerar seu contrato, preciso coletar e processar seus dados pessoais.\n\n✅ Ao continuar, você concorda com:\n• Coleta de dados para geração de contratos\n• Armazenamento seguro por até 5 anos\n• Uso exclusivo para prestação do serviço\n\nVocê pode solicitar remoção dos dados a qualquer momento.\n\n**Aceita os termos?** Responda SIM para continuar."
+        }
+      ]
+    }
+  },
+  "template_usage": {
+    "welcome_message": "First interaction with new users",
+    "contract_ready": "When contract PDF is generated and ready",
+    "information_request": "When user needs to provide more data",
+    "processing_message": "While AI is processing user information", 
+    "error_message": "When errors occur during processing",
+    "help_message": "When user asks for help or sends 'help'",
+    "consent_request": "LGPD compliance - first time users"
+  },
+  "template_variables": {
+    "contract_ready": [
+      "{{1}} - Property type (casa, apartamento, etc.)",
+      "{{2}} - Rental value (R$ 1.500,00)",
+      "{{3}} - Contract duration (12 meses)"
+    ]
+  },
+  "approval_notes": {
+    "language": "All templates use Brazilian Portuguese (pt_BR)",
+    "category": "UTILITY category for business communication",
+    "compliance": "Templates follow WhatsApp Business Policy guidelines",
+    "lgpd": "consent_request template ensures LGPD compliance",
+    "tone": "Professional but friendly, appropriate for legal services"
+  }
+}

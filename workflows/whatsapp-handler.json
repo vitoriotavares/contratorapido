@@ -1,0 +1,679 @@
+{
+  "name": "CR-005: WhatsApp Message Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/whatsapp/webhook",
+        "options": {
+          "responseData": "First Entry JSON",
+          "responseCode": 200
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "whatsapp-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// WhatsApp Message Validation and Rate Limiting\nconst items = $input.all();\nconst output = [];\n\nfor (const item of items) {\n  const data = item.json;\n  \n  // Validate WhatsApp webhook structure\n  if (!data.entry || !Array.isArray(data.entry) || data.entry.length === 0) {\n    // Invalid webhook data - skip\n    continue;\n  }\n  \n  for (const entry of data.entry) {\n    if (!entry.changes || !Array.isArray(entry.changes)) {\n      continue;\n    }\n    \n    for (const change of entry.changes) {\n      if (change.field !== 'messages' || !change.value.messages) {\n        continue;\n      }\n      \n      const messages = change.value.messages;\n      const contacts = change.value.contacts || [];\n      const metadata = change.value.metadata || {};\n      \n      for (const message of messages) {\n        // Extract contact information\n        const contact = contacts.find(c => c.wa_id === message.from) || {};\n        \n        // Current timestamp for rate limiting\n        const currentTime = new Date();\n        const messageTime = new Date(parseInt(message.timestamp) * 1000);\n        \n        // Validate message age (ignore messages older than 5 minutes)\n        const messageAgeMs = currentTime - messageTime;\n        if (messageAgeMs > 5 * 60 * 1000) {\n          console.log(`Ignoring old message from ${message.from}`);\n          continue;\n        }\n        \n        // Extract message content based on type\n        let messageText = '';\n        let messageType = message.type;\n        \n        switch (message.type) {\n          case 'text':\n            messageText = message.text?.body || '';\n            break;\n          case 'button':\n            messageText = message.button?.text || '';\n            break;\n          case 'interactive':\n            if (message.interactive?.type === 'button_reply') {\n              messageText = message.interactive.button_reply?.title || '';\n            } else if (message.interactive?.type === 'list_reply') {\n              messageText = message.interactive.list_reply?.title || '';\n            }\n            break;\n          default:\n            // For now, we only handle text-based messages\n            console.log(`Unsupported message type: ${message.type}`);\n            continue;\n        }\n        \n        // Skip empty messages\n        if (!messageText.trim()) {\n          continue;\n        }\n        \n        // Create standardized message object\n        const processedMessage = {\n          // Message identifiers\n          messageId: message.id,\n          waId: message.from,\n          phoneNumber: message.from,\n          \n          // Contact information\n          contactName: contact.profile?.name || 'Usuário',\n          \n          // Message content\n          messageText: messageText.trim(),\n          messageType: messageType,\n          \n          // Timestamps\n          timestamp: messageTime.toISOString(),\n          receivedAt: currentTime.toISOString(),\n          \n          // WhatsApp metadata\n          businessPhoneNumberId: metadata.phone_number_id,\n          displayPhoneNumber: metadata.display_phone_number,\n          \n          // Processing flags\n          isValidated: true,\n          needsRateLimit: true,\n          \n          // Original data for debugging\n          originalMessage: message,\n          originalContact: contact\n        };\n        \n        output.push({ json: processedMessage });\n      }\n    }\n  }\n}\n\nreturn output;"
+      },
+      "id": "message-validator",
+      "name": "Message Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "operation": "findOne",
+        "collection": "rate_limits",
+        "query": "{\n  \"phoneNumber\": \"{{ $json.waId }}\"\n}",
+        "options": {}
+      },
+      "id": "check-rate-limit",
+      "name": "Check Rate Limit",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rate Limit Enforcement\nconst items = $input.all();\nconst output = [];\nconst currentTime = new Date();\n\n// Rate limit configuration (Portuguese SaaS context)\nconst RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute\nconst MAX_MESSAGES_PER_WINDOW = 5; // Max 5 messages per minute per user\nconst COOLDOWN_PERIOD_MS = 5 * 60 * 1000; // 5 minute cooldown for rate limited users\n\nfor (const item of items) {\n  const message = item.json;\n  const rateLimit = $('Check Rate Limit').item?.json;\n  \n  let shouldProcess = true;\n  let rateLimitAction = 'allow';\n  let rateLimitData = {\n    phoneNumber: message.waId,\n    messageCount: 1,\n    windowStart: currentTime,\n    lastMessage: currentTime,\n    isBlocked: false,\n    blockedUntil: null\n  };\n  \n  if (rateLimit) {\n    const windowStart = new Date(rateLimit.windowStart);\n    const lastMessage = new Date(rateLimit.lastMessage);\n    const blockedUntil = rateLimit.blockedUntil ? new Date(rateLimit.blockedUntil) : null;\n    \n    // Check if user is currently blocked\n    if (blockedUntil && currentTime < blockedUntil) {\n      shouldProcess = false;\n      rateLimitAction = 'blocked';\n      rateLimitData = {\n        ...rateLimit,\n        lastMessage: currentTime\n      };\n    }\n    // Check if within current window\n    else if (currentTime - windowStart <= RATE_LIMIT_WINDOW_MS) {\n      if (rateLimit.messageCount >= MAX_MESSAGES_PER_WINDOW) {\n        // Rate limit exceeded - block user\n        shouldProcess = false;\n        rateLimitAction = 'rate_limited';\n        rateLimitData = {\n          ...rateLimit,\n          messageCount: rateLimit.messageCount + 1,\n          lastMessage: currentTime,\n          isBlocked: true,\n          blockedUntil: new Date(currentTime.getTime() + COOLDOWN_PERIOD_MS)\n        };\n      } else {\n        // Increment counter within window\n        rateLimitAction = 'increment';\n        rateLimitData = {\n          ...rateLimit,\n          messageCount: rateLimit.messageCount + 1,\n          lastMessage: currentTime,\n          isBlocked: false,\n          blockedUntil: null\n        };\n      }\n    }\n    // Start new window\n    else {\n      rateLimitAction = 'new_window';\n      rateLimitData = {\n        phoneNumber: message.waId,\n        messageCount: 1,\n        windowStart: currentTime,\n        lastMessage: currentTime,\n        isBlocked: false,\n        blockedUntil: null\n      };\n    }\n  }\n  \n  // Add rate limiting info to message\n  const processedMessage = {\n    ...message,\n    rateLimit: {\n      shouldProcess,\n      action: rateLimitAction,\n      messagesInWindow: rateLimitData.messageCount,\n      windowStart: rateLimitData.windowStart,\n      isBlocked: rateLimitData.isBlocked,\n      blockedUntil: rateLimitData.blockedUntil\n    },\n    rateLimitData\n  };\n  \n  output.push({ json: processedMessage });\n}\n\nreturn output;"
+      },
+      "id": "rate-limit-processor",
+      "name": "Rate Limit Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "rate_limits",
+        "updateKey": "phoneNumber",
+        "fieldsUi": {
+          "field": [
+            {
+              "fieldName": "phoneNumber",
+              "fieldValue": "{{ $json.rateLimitData.phoneNumber }}"
+            },
+            {
+              "fieldName": "messageCount",
+              "fieldValue": "{{ $json.rateLimitData.messageCount }}"
+            },
+            {
+              "fieldName": "windowStart",
+              "fieldValue": "{{ $json.rateLimitData.windowStart }}"
+            },
+            {
+              "fieldName": "lastMessage",
+              "fieldValue": "{{ $json.rateLimitData.lastMessage }}"
+            },
+            {
+              "fieldName": "isBlocked",
+              "fieldValue": "{{ $json.rateLimitData.isBlocked }}"
+            },
+            {
+              "fieldName": "blockedUntil",
+              "fieldValue": "{{ $json.rateLimitData.blockedUntil }}"
+            }
+          ]
+        },
+        "options": {
+          "upsert": true
+        }
+      },
+      "id": "update-rate-limit",
+      "name": "Update Rate Limit",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "rate-limited",
+              "leftValue": "={{ $json.rateLimit.shouldProcess }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "rate-limit-filter",
+      "name": "Rate Limit Filter",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "operation": "findOne",
+        "collection": "conversations",
+        "query": "{\n  \"phoneNumber\": \"{{ $json.waId }}\"\n}",
+        "options": {}
+      },
+      "id": "get-conversation",
+      "name": "Get Conversation",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [1400, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Message Intent Classification and Context Processing\nconst items = $input.all();\nconst output = [];\n\n// Portuguese intent patterns for Brazilian rental contract SaaS\nconst INTENT_PATTERNS = {\n  novo_contrato: {\n    keywords: ['novo contrato', 'fazer contrato', 'criar contrato', 'preciso de contrato', 'quero alugar', 'contrato de aluguel'],\n    patterns: /\\b(novo|criar|fazer|preciso).*(contrato|alugu[éeêl]|loca[çc][ãaáo])\\b/i\n  },\n  continuacao: {\n    keywords: ['sim', 'não', 'ok', 'certo', 'correto', 'confirma', 'confirmo'],\n    patterns: /\\b(sim|n[ãaá]o|ok|certo|correto|confirma|confirmo|continua)\\b/i\n  },\n  ajuda: {\n    keywords: ['ajuda', 'help', 'como', 'dúvida', 'não entendi', 'o que'],\n    patterns: /\\b(ajuda|help|como|d[úu]vida|n[ãaá]o\\s+entendi|que\\s+que)\\b/i\n  },\n  cancelar: {\n    keywords: ['cancelar', 'parar', 'sair', 'desistir', 'tchau', 'bye'],\n    patterns: /\\b(cancelar|parar|sair|desistir|tchau|bye|para)\\b/i\n  },\n  dados_pessoais: {\n    patterns: /\\b[A-Za-zÀ-ÿ\\s]{2,}\\s+[A-Za-zÀ-ÿ\\s]{2,}\\b|\\b\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}\\b|\\b\\d{2}\\s*\\d{4,5}-?\\d{4}\\b/\n  },\n  endereco: {\n    patterns: /\\b(rua|av|avenida|pra[çc]a|alameda|rodovia)\\s+[A-Za-zÀ-ÿ\\s\\d,.-]+\\b|\\b\\d{5}-?\\d{3}\\b/i\n  }\n};\n\nfor (const item of items) {\n  const message = item.json;\n  const conversation = $('Get Conversation').item?.json;\n  \n  const messageText = message.messageText.toLowerCase().trim();\n  \n  // Classify message intent\n  let intent = 'unknown';\n  let confidence = 0;\n  \n  // Check patterns\n  for (const [intentName, config] of Object.entries(INTENT_PATTERNS)) {\n    if (config.patterns && config.patterns.test(messageText)) {\n      intent = intentName;\n      confidence = 0.8;\n      break;\n    }\n    \n    if (config.keywords) {\n      for (const keyword of config.keywords) {\n        if (messageText.includes(keyword.toLowerCase())) {\n          intent = intentName;\n          confidence = 0.6;\n          break;\n        }\n      }\n    }\n  }\n  \n  // Context-based intent refinement\n  if (conversation && conversation.currentStep) {\n    switch (conversation.currentStep) {\n      case 'awaiting_confirmation':\n        if (['sim', 'ok', 'certo', 'confirmo'].some(word => messageText.includes(word))) {\n          intent = 'continuacao';\n          confidence = 0.9;\n        } else if (['não', 'nao'].some(word => messageText.includes(word))) {\n          intent = 'cancelar';\n          confidence = 0.9;\n        }\n        break;\n      case 'collecting_personal_data':\n        if (INTENT_PATTERNS.dados_pessoais.patterns.test(message.messageText)) {\n          intent = 'dados_pessoais';\n          confidence = 0.9;\n        }\n        break;\n      case 'collecting_address':\n        if (INTENT_PATTERNS.endereco.patterns.test(message.messageText)) {\n          intent = 'endereco';\n          confidence = 0.9;\n        }\n        break;\n    }\n  }\n  \n  // Determine routing based on conversation state\n  let route = 'new_conversation';\n  \n  if (conversation) {\n    if (intent === 'cancelar') {\n      route = 'cancel_conversation';\n    } else if (intent === 'ajuda') {\n      route = 'help_handler';\n    } else if (conversation.status === 'active') {\n      route = 'continue_conversation';\n    } else if (conversation.status === 'completed') {\n      route = 'new_conversation';\n    } else {\n      route = 'resume_conversation';\n    }\n  } else {\n    if (intent === 'ajuda') {\n      route = 'help_handler';\n    } else {\n      route = 'new_conversation';\n    }\n  }\n  \n  // Create enriched message with context\n  const enrichedMessage = {\n    ...message,\n    intent: {\n      name: intent,\n      confidence: confidence,\n      originalText: message.messageText\n    },\n    conversation: conversation || null,\n    routing: {\n      route: route,\n      reason: `Intent: ${intent}, Conversation: ${conversation ? conversation.status : 'none'}`,\n      timestamp: new Date().toISOString()\n    },\n    context: {\n      hasExistingConversation: !!conversation,\n      conversationStep: conversation?.currentStep || null,\n      conversationStatus: conversation?.status || null,\n      userId: conversation?.userId || null\n    }\n  };\n  \n  output.push({ json: enrichedMessage });\n}\n\nreturn output;"
+      },
+      "id": "message-classifier",
+      "name": "Message Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 200]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routing.route }}",
+                    "rightValue": "new_conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "new_conversation"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routing.route }}",
+                    "rightValue": "continue_conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "continue_conversation"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routing.route }}",
+                    "rightValue": "help_handler",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "help_handler"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routing.route }}",
+                    "rightValue": "cancel_conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cancel_conversation"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "message-router",
+      "name": "Message Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1800, 200]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "conversations",
+        "fieldsUi": {
+          "field": [
+            {
+              "fieldName": "userId",
+              "fieldValue": "{{ $json.waId }}"
+            },
+            {
+              "fieldName": "phoneNumber",
+              "fieldValue": "{{ $json.waId }}"
+            },
+            {
+              "fieldName": "contactName",
+              "fieldValue": "{{ $json.contactName }}"
+            },
+            {
+              "fieldName": "status",
+              "fieldValue": "active"
+            },
+            {
+              "fieldName": "currentStep",
+              "fieldValue": "welcome"
+            },
+            {
+              "fieldName": "contractType",
+              "fieldValue": "rental"
+            },
+            {
+              "fieldName": "createdAt",
+              "fieldValue": "{{ $json.receivedAt }}"
+            },
+            {
+              "fieldName": "updatedAt",
+              "fieldValue": "{{ $json.receivedAt }}"
+            },
+            {
+              "fieldName": "context",
+              "fieldValue": "{}"
+            },
+            {
+              "fieldName": "messages",
+              "fieldValue": "[]"
+            }
+          ]
+        }
+      },
+      "id": "create-new-conversation",
+      "name": "Create New Conversation",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "collection": "conversations",
+        "updateKey": "phoneNumber",
+        "fieldsUi": {
+          "field": [
+            {
+              "fieldName": "phoneNumber",
+              "fieldValue": "{{ $json.waId }}"
+            },
+            {
+              "fieldName": "updatedAt",
+              "fieldValue": "{{ $json.receivedAt }}"
+            },
+            {
+              "fieldName": "lastMessageAt",
+              "fieldValue": "{{ $json.receivedAt }}"
+            }
+          ]
+        }
+      },
+      "id": "update-conversation",
+      "name": "Update Conversation",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Help Handler - Portuguese responses for Brazilian users\nconst items = $input.all();\nconst output = [];\n\nconst HELP_RESPONSES = {\n  general: {\n    text: `🏠 *ContratoRápido - Como posso ajudar?*\\n\\nEu ajudo você a criar contratos de aluguel de forma rápida e fácil!\\n\\n📋 *Comandos disponíveis:*\\n• Digite \"novo contrato\" para começar\\n• Digite \"status\" para ver seu progresso\\n• Digite \"cancelar\" para parar\\n\\n❓ *Dúvidas?*\\nEnvie sua pergunta que eu te ajudo!`,\n    buttons: [\n      {\n        type: \"reply\",\n        reply: {\n          id: \"new_contract\",\n          title: \"Novo Contrato\"\n        }\n      },\n      {\n        type: \"reply\",\n        reply: {\n          id: \"help_more\",\n          title: \"Mais Ajuda\"\n        }\n      }\n    ]\n  },\n  detailed: {\n    text: `📚 *Ajuda Detalhada - ContratoRápido*\\n\\n🏠 *Sobre o serviço:*\\nCrio contratos de aluguel personalizados seguindo a lei brasileira\\n\\n⚡ *Como funciona:*\\n1. Me envie \"novo contrato\"\\n2. Respondo algumas perguntas\\n3. Seu contrato fica pronto em minutos!\\n\\n📋 *Informações necessárias:*\\n• Dados do locador e locatário\\n• Endereço do imóvel\\n• Valor do aluguel\\n• Prazo do contrato\\n\\n🔒 *Segurança:*\\nSeus dados são protegidos e não são compartilhados\\n\\n💬 *Suporte:*\\nEstou aqui 24/7 para ajudar!\",\n    buttons: [\n      {\n        type: \"reply\",\n        reply: {\n          id: \"start_contract\",\n          title: \"Começar Agora\"\n        }\n      }\n    ]\n  }\n};\n\nfor (const item of items) {\n  const message = item.json;\n  \n  // Determine help type based on message content\n  let helpType = 'general';\n  const messageText = message.messageText.toLowerCase();\n  \n  if (messageText.includes('detalhado') || messageText.includes('mais') || messageText.includes('como funciona')) {\n    helpType = 'detailed';\n  }\n  \n  const helpResponse = HELP_RESPONSES[helpType];\n  \n  const responseMessage = {\n    ...message,\n    response: {\n      type: 'help',\n      subType: helpType,\n      text: helpResponse.text,\n      buttons: helpResponse.buttons,\n      timestamp: new Date().toISOString()\n    },\n    routing: {\n      ...message.routing,\n      nextAction: 'send_response',\n      responseType: 'help_message'\n    }\n  };\n  \n  output.push({ json: responseMessage });\n}\n\nreturn output;"
+      },
+      "id": "help-handler",
+      "name": "Help Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cancel Conversation Handler - Portuguese responses\nconst items = $input.all();\nconst output = [];\n\nfor (const item of items) {\n  const message = item.json;\n  \n  const cancelResponse = {\n    text: `👋 *Conversa cancelada*\\n\\nTudo bem! Cancelei nossa conversa sobre o contrato.\\n\\nSe mudar de ideia, é só me enviar \"novo contrato\" que começamos novamente!\\n\\nObrigado e até mais! 😊`,\n    buttons: [\n      {\n        type: \"reply\",\n        reply: {\n          id: \"new_contract\",\n          title: \"Novo Contrato\"\n        }\n      }\n    ]\n  };\n  \n  const responseMessage = {\n    ...message,\n    response: {\n      type: 'cancellation',\n      text: cancelResponse.text,\n      buttons: cancelResponse.buttons,\n      timestamp: new Date().toISOString()\n    },\n    routing: {\n      ...message.routing,\n      nextAction: 'send_response',\n      responseType: 'cancel_message'\n    }\n  };\n  \n  output.push({ json: responseMessage });\n}\n\nreturn output;"
+      },
+      "id": "cancel-conversation",
+      "name": "Cancel Conversation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "message_log",
+        "fieldsUi": {
+          "field": [
+            {
+              "fieldName": "messageId",
+              "fieldValue": "{{ $json.messageId }}"
+            },
+            {
+              "fieldName": "phoneNumber",
+              "fieldValue": "{{ $json.waId }}"
+            },
+            {
+              "fieldName": "direction",
+              "fieldValue": "inbound"
+            },
+            {
+              "fieldName": "messageText",
+              "fieldValue": "{{ $json.messageText }}"
+            },
+            {
+              "fieldName": "messageType",
+              "fieldValue": "{{ $json.messageType }}"
+            },
+            {
+              "fieldName": "intent",
+              "fieldValue": "{{ $json.intent.name }}"
+            },
+            {
+              "fieldName": "confidence",
+              "fieldValue": "{{ $json.intent.confidence }}"
+            },
+            {
+              "fieldName": "route",
+              "fieldValue": "{{ $json.routing.route }}"
+            },
+            {
+              "fieldName": "timestamp",
+              "fieldValue": "{{ $json.timestamp }}"
+            },
+            {
+              "fieldName": "processedAt",
+              "fieldValue": "{{ $json.receivedAt }}"
+            },
+            {
+              "fieldName": "businessPhoneNumberId",
+              "fieldValue": "{{ $json.businessPhoneNumberId }}"
+            }
+          ]
+        }
+      },
+      "id": "log-message",
+      "name": "Log Message",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [2200, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rate Limited Response Handler\nconst items = $input.all();\nconst output = [];\n\nfor (const item of items) {\n  const message = item.json;\n  const rateLimitInfo = message.rateLimit;\n  \n  let responseText = '';\n  \n  if (rateLimitInfo.action === 'rate_limited') {\n    // Portuguese message for rate limited users\n    const minutesUntilUnblock = Math.ceil((new Date(rateLimitInfo.blockedUntil) - new Date()) / (60 * 1000));\n    responseText = `⚠️ *Muitas mensagens!*\\n\\nPor favor, aguarde ${minutesUntilUnblock} minuto(s) antes de enviar outra mensagem.\\n\\nIsso nos ajuda a manter um bom atendimento para todos! 🙏`;\n  } else if (rateLimitInfo.action === 'blocked') {\n    const minutesUntilUnblock = Math.ceil((new Date(rateLimitInfo.blockedUntil) - new Date()) / (60 * 1000));\n    responseText = `🚫 *Aguarde um pouco*\\n\\nVocê ainda precisa esperar ${minutesUntilUnblock} minuto(s) para enviar mensagens.\\n\\nObrigado pela compreensão!`;\n  }\n  \n  if (responseText) {\n    const responseMessage = {\n      to: message.waId,\n      text: responseText,\n      messageType: 'rate_limit_response',\n      businessPhoneNumberId: message.businessPhoneNumberId\n    };\n    \n    output.push({ json: responseMessage });\n  }\n}\n\nreturn output;"
+      },
+      "id": "rate-limit-response",
+      "name": "Rate Limit Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 450]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "position",
+        "options": {}
+      },
+      "id": "merge-responses",
+      "name": "Merge Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [2400, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Error Handler and Response Formatter\nconst items = $input.all();\nconst output = [];\nconst errors = [];\n\nfor (const item of items) {\n  try {\n    const data = item.json;\n    \n    // Check if this is an error item\n    if (data.error) {\n      errors.push({\n        messageId: data.messageId,\n        phoneNumber: data.waId,\n        error: data.error,\n        timestamp: new Date().toISOString()\n      });\n      \n      // Create error response\n      const errorResponse = {\n        to: data.waId,\n        text: `❌ *Ops! Algo deu errado*\\n\\nDesculpe, tivemos um problema técnico.\\n\\nTente novamente em alguns minutos ou digite \"ajuda\" para outras opções.`,\n        messageType: 'error_response',\n        businessPhoneNumberId: data.businessPhoneNumberId\n      };\n      \n      output.push({ json: errorResponse });\n      continue;\n    }\n    \n    // Process normal responses\n    if (data.response) {\n      const formattedResponse = {\n        to: data.waId,\n        text: data.response.text,\n        messageType: data.response.type,\n        businessPhoneNumberId: data.businessPhoneNumberId\n      };\n      \n      // Add interactive elements if present\n      if (data.response.buttons && data.response.buttons.length > 0) {\n        formattedResponse.interactive = {\n          type: 'button',\n          body: {\n            text: data.response.text\n          },\n          action: {\n            buttons: data.response.buttons\n          }\n        };\n      }\n      \n      output.push({ json: formattedResponse });\n    } else {\n      // Regular message processing - just pass through\n      output.push(item);\n    }\n  } catch (error) {\n    console.error('Error in error handler:', error);\n    errors.push({\n      error: error.message,\n      item: item,\n      timestamp: new Date().toISOString()\n    });\n  }\n}\n\n// Log errors if any\nif (errors.length > 0) {\n  console.log('Workflow errors:', JSON.stringify(errors, null, 2));\n}\n\nreturn output;"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2600, 300]
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Message Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Validator": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Processor": {
+      "main": [
+        [
+          {
+            "node": "Update Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Filter": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Conversation": {
+      "main": [
+        [
+          {
+            "node": "Message Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Classifier": {
+      "main": [
+        [
+          {
+            "node": "Message Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Router": {
+      "main": [
+        [
+          {
+            "node": "Create New Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Help Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cancel Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Conversation": {
+      "main": [
+        [
+          {
+            "node": "Log Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Conversation": {
+      "main": [
+        [
+          {
+            "node": "Log Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Help Handler": {
+      "main": [
+        [
+          {
+            "node": "Log Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancel Conversation": {
+      "main": [
+        [
+          {
+            "node": "Log Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Message": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Response": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Responses": {
+      "main": [
+        [
+          {
+            "node": "Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "id": "whatsapp",
+      "name": "WhatsApp"
+    },
+    {
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z",
+      "id": "contract-generation",
+      "name": "Contract Generation"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
